@@ -1,0 +1,32 @@
+name: Paper trading BTC/USDT 4h
+
+on:
+  schedule:
+    # 5 minutos después de cada cierre de vela de 4h (00:05, 04:05, 08:05... UTC)
+    - cron: "5 */4 * * *"
+  workflow_dispatch: {}  # permite tirarlo a mano desde la pestaña Actions de GitHub
+
+permissions:
+  contents: write
+
+jobs:
+  revisar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install -r requirements.txt
+
+      - run: python paper_trading.py --once
+
+      - name: Guardar log y estado si cambiaron
+        run: |
+          git config user.name "paper-trading-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add paper_trades_log.csv paper_trading_estado.json
+          git diff --cached --quiet || git commit -m "Paper trading: revisión automática"
+          git push
