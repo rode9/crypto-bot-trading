@@ -37,7 +37,23 @@ FEE_PCT = 0.001
 LOG_FILE = "paper_trades_log.csv"
 ESTADO_FILE = "paper_trading_estado.json"  # para no perder la posición abierta si el proceso se corta
 
-exchange = ccxt.binance()
+# Binance primero (mismo exchange que se usó para validar la estrategia), con
+# Kraken/OKX como respaldo — Binance devuelve 451 "restricted location" desde
+# IPs de nubes/datacenters (ej. los runners de GitHub Actions), así que sin
+# esto el bot no puede correr en la nube.
+EXCHANGES_A_PROBAR = ["binance", "kraken", "okx"]
+
+
+def obtener_velas(symbol: str, timeframe: str, limit: int):
+    ultimo_error = None
+    for exchange_id in EXCHANGES_A_PROBAR:
+        try:
+            exchange = getattr(ccxt, exchange_id)()
+            return exchange.fetch_ohlcv(symbol, timeframe=timeframe, limit=limit), exchange_id
+        except Exception as e:
+            print(f"  {exchange_id} no disponible ({e}), probando siguiente...")
+            ultimo_error = e
+    raise ultimo_error
 
 
 def log_trade(row: dict):
@@ -70,7 +86,8 @@ def revisar_una_vez():
 
     # limit alto porque el filtro de tendencia usa EMA200: necesita
     # bastante historia previa para que ese promedio ya esté estabilizado
-    ohlcv = exchange.fetch_ohlcv(SYMBOL, timeframe=TIMEFRAME, limit=500)
+    ohlcv, exchange_usado = obtener_velas(SYMBOL, TIMEFRAME, limit=500)
+    print(f"  datos obtenidos de: {exchange_usado}")
     df = pd.DataFrame(ohlcv, columns=["timestamp", "open", "high", "low", "close", "volume"])
     df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms")
     df = compute_indicators(df)
