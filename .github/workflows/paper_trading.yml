@@ -27,6 +27,8 @@ jobs:
         run: |
           git config user.name "paper-trading-bot"
           git config user.email "actions@users.noreply.github.com"
-          git add paper_trades_log.csv paper_trading_estado.json
+          for f in paper_trades_log.csv paper_trading_estado.json; do
+            [ -f "$f" ] && git add "$f"
+          done
           git diff --cached --quiet || git commit -m "Paper trading: revisión automática"
           git push
