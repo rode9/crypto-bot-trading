@@ -113,17 +113,30 @@ en la mayoría de los años).
 9. Descartar definitivamente 1h en BTC/ETH (drawdown de ruina, pierde
    estructuralmente) — no reconsiderar sin una razón nueva y concreta.
 10. ~~Configurar `paper_trading.py` con la config validada~~ — hecho:
-    `SYMBOL="BTC/USDT"`, `TIMEFRAME="4h"`, `CHECK_INTERVAL_SEC=900`, y
-    `limit=500` velas (necesario para que la EMA200 esté bien calentada).
-    **Rode lo corre manualmente en su propia terminal** (`python
-    paper_trading.py`, dejarlo abierto) — un proceso lanzado dentro de una
-    sesión de Claude Code no sobrevive días/semanas, así que esto no se
-    puede dejar corriendo "desde acá".
-11. Revisar `paper_trades_log.csv` después de mínimo 2-4 semanas corriendo
+    `SYMBOL="BTC/USDT"`, `TIMEFRAME="4h"`, `limit=500` velas (necesario para
+    que la EMA200 esté bien calentada).
+11. ~~Correrlo sin depender de la notebook prendida~~ — hecho, corre solo en
+    GitHub Actions (repo: `github.com/rode9/crypto-bot-trading`, público).
+    Detalles importantes:
+    - `paper_trading.py --once` hace una sola revisión y termina (modo cron,
+      distinto al loop infinito de `run()` que es solo para uso manual local).
+    - `.github/workflows/paper_trading.yml` lo ejecuta cada 4h automáticamente
+      (cron `5 */4 * * *`, también se puede tirar a mano con "Run workflow"
+      en la pestaña Actions de GitHub) y commitea de vuelta al repo
+      `paper_trades_log.csv` y `paper_trading_estado.json` si cambiaron.
+    - **Bug encontrado y resuelto**: Binance devuelve 451 "restricted
+      location" desde IPs de datacenter (los runners de GitHub están ahí) —
+      se agregó fallback a Kraken/OKX en `obtener_velas()`. El histórico de
+      9 años usado para validar la estrategia se descargó desde la PC de
+      Rode (Binance ahí sí funciona), esto solo afecta la ejecución en vivo.
+    - Estado: workflow corriendo en verde (✅), primera ejecución exitosa
+      2026-09-27. Revisar la pestaña Actions del repo si en algún momento
+      aparece en rojo.
+12. Revisar `paper_trades_log.csv` después de mínimo 2-4 semanas corriendo
     antes de considerar cualquier cosa con plata real. Con velas de 4h el
     volumen de trades va a ser bajo (backtest de 9 años dio ~150 trades en
     total para BTC 4h) — no alarmarse si pasan días sin actividad.
-12. Modo "live" real (no implementado — ni pensarlo hasta que el paper
+13. Modo "live" real (no implementado — ni pensarlo hasta que el paper
     trading en curso confirme resultados consistentes con lo que dio el
     backtest)
 
